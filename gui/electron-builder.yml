@@ -1,0 +1,74 @@
+appId: com.changfei.hls-downloader
+productName: hls-downloader
+
+directories:
+  output: dist
+  buildResources: build
+
+# 只把运行时真正需要的东西打进 app.asar。
+# test/ tools/ vendor/ node_modules 一律不要——electron 是 devDependency，
+# 打包器会自动排除，asar 里最后只有下面这几个文件（几十 KB）。
+files:
+  - main.js
+  - preload.js
+  - renderer/**
+  - package.json
+
+# asar 外面放两类东西：
+#   1. CLI 脚本 —— 它要被当成普通脚本 spawn，asar 里的路径不是真文件
+#   2. ffmpeg / ffprobe —— 要真的被当可执行文件调用
+# 都通过 extraResources 落到 resources/ 下，main.js 里用 process.resourcesPath 找。
+extraResources:
+  - from: ../hls-downloader.js
+    to: cli/hls-downloader.js
+  - from: vendor/win32-x64/ffmpeg.exe
+    to: bin/ffmpeg.exe
+  - from: vendor/win32-x64/ffprobe.exe
+    to: bin/ffprobe.exe
+
+win:
+  # 两种形态一起出，让人按「启动速度 vs 单个文件」自己挑：
+  #   portable —— 一个 exe，双击即用。但每次启动都要把 ~523MB 解压到临时目录，实测约 12 秒
+  #   zip      —— 解压一次得到一个文件夹，之后启动约 0.2 秒
+  target:
+    - target: portable
+      arch:
+        - x64
+    - target: zip
+      arch:
+        - x64
+  icon: build/icon.png
+
+portable:
+  # 自解压到临时目录时用的目录名。固定下来，别每次生成随机名。
+  unpackDirName: hls-downloader-portable
+  artifactName: hls-downloader-${version}-portable.exe
+
+# ⚠️ 千万别在这里写 `npmRebuild: false`！
+# app-builder-lib/out/packager.js 的 installAppDependencies() 里，
+# `npmRebuild === false` 会在**调用 beforeBuild 之前**就 `return`，
+# 于是下面那个钩子根本不会被执行，`_nodeModulesHandledExternally` 也就永远不置真
+# → 依赖树收集照样跑 → Windows 上照样用 PowerShell 跑 `npm list` → 照样
+#   `No JSON content found in output`。
+# 跳过重建这件事由 beforeBuild 返回 false 一并完成（同一个 return），不需要 npmRebuild。
+#
+# 这个钩子返回 false，等于声明「node_modules 由我自己管」，
+# 打包器会整个跳过依赖树收集 —— 本项目零运行时依赖，那一步本来就是白跑，
+# 而且它在 Windows 上走 PowerShell 跑 `npm list`，这台机器上跑不通。
+# 详见 tools/before-build.js 里的说明。
+beforeBuild: tools/before-build.js
+
+# 关掉 asar 完整性校验资源的写入。
+#
+# electron-builder 默认会用 resedit 库往 exe 里塞一个 INTEGRITY/ELECTRONASAR 资源，
+# 做法是「读出整个 exe → 改资源树 → generate() 重新生成 PE → 覆盖原文件」。
+# 实测在这台机器 + Electron 44.7.0 上，它生成的 exe **无法被 Windows 加载**
+# （spawn 报 UNKNOWN、bash 直接执行报 Permission denied，而同一个 electron.exe
+#   原样复制过来却能跑；PE 头/节表都正常，只有 .rsrc 的 virtualSize 被改小）。
+#
+# 这个完整性校验是给「自动更新 + 代码签名」场景防篡改用的，本项目自用、不签名、不走自动更新，
+# 关掉没有任何损失。
+disableAsarIntegrity: true
+
+# 不签名（自用），但 exe 的图标和版本信息还是要写的
+forceCodeSigning: false

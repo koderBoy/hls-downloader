@@ -1,0 +1,13 @@
+# 依赖（electron 二进制 ~370MB）
+node_modules/
+
+# 下载的内置二进制（ffmpeg / ffprobe，各 77MB）——用 `npm run vendor` 重新拉
+vendor/
+
+# 打包产物（几百 MB）——用 `npm run build` 重新生成
+dist/
+
+# 顺手产物
+*.log
+.DS_Store
+Thumbs.db

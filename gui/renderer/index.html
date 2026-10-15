@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:;">
+<title>hls-downloader</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <span class="dot"></span>
+      <h1>hls-downloader</h1>
+      <span class="sub">网页视频流下载</span>
+    </div>
+    <div class="env" id="env"></div>
+  </header>
+
+  <main>
+
+    <!-- 输入 -->
+    <section class="card">
+      <div class="field">
+        <label for="url">页面 URL <span class="hint">也可以直接粘流地址（.m3u8 / .mpd / .mp4）</span></label>
+        <input id="url" type="text" spellcheck="false"
+               placeholder="https://example.com/video/123">
+      </div>
+      <div class="field">
+        <label for="output">保存到</label>
+        <div class="row">
+          <input id="output" type="text" spellcheck="false" placeholder="留空则按链接自动命名，存到当前目录">
+          <button id="pick" class="ghost">选择…</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 选项 -->
+    <details class="card" id="adv">
+      <summary>选项<span class="sum-hint" id="advHint"></span></summary>
+      <div class="grid">
+        <div class="field">
+          <label for="quality">选流</label>
+          <input id="quality" type="text" spellcheck="false" value="best"
+                 placeholder="best / worst / 1280x720 / 带宽数字">
+        </div>
+        <div class="field">
+          <label for="period">Period</label>
+          <input id="period" type="number" min="1" placeholder="留空 = 全部">
+        </div>
+        <div class="field">
+          <label for="concurrency">并发切片数</label>
+          <input id="concurrency" type="number" min="1" value="16">
+        </div>
+        <div class="field">
+          <label for="timeout">单请求超时（秒）</label>
+          <input id="timeout" type="number" min="1" value="30">
+        </div>
+        <div class="field span2">
+          <label for="referer">Referer <span class="hint">默认自动取页面 origin</span></label>
+          <input id="referer" type="text" spellcheck="false" placeholder="留空 = 自动">
+        </div>
+        <div class="field span2">
+          <label for="userAgent">User-Agent</label>
+          <input id="userAgent" type="text" spellcheck="false" placeholder="留空 = 内置 Chrome UA">
+        </div>
+        <div class="field span2">
+          <label for="cookie">Cookie <span class="hint">需要登录的站用得上</span></label>
+          <input id="cookie" type="text" spellcheck="false" placeholder="sessionid=xxxx">
+        </div>
+        <div class="field span2">
+          <label for="ffmpeg">ffmpeg 路径 <span class="hint">留空 = 从 PATH 里找</span></label>
+          <div class="row">
+            <input id="ffmpeg" type="text" spellcheck="false" placeholder="留空 = 自动">
+          </div>
+        </div>
+      </div>
+      <div class="checks">
+        <label class="chk"><input type="checkbox" id="probe"> 只探测，不下载</label>
+        <label class="chk"><input type="checkbox" id="headed"> 显示浏览器窗口</label>
+        <label class="chk"><input type="checkbox" id="keepTemp"> 保留中间文件</label>
+        <label class="chk"><input type="checkbox" id="noVerify"> 跳过解码校验</label>
+        <label class="chk"><input type="checkbox" id="useProxy"> 使用系统代理</label>
+      </div>
+      <p class="tip" id="proxyTip">默认清空 <code>https_proxy</code> 等环境变量：这台机器上的常驻代理会让出口 IP 变化，
+        按 IP 签名的清单会直接 403。需要走代理时再勾上。</p>
+    </details>
+
+    <!-- 操作 -->
+    <section class="actions">
+      <button id="go" class="primary">开始下载</button>
+      <button id="stop" class="ghost" disabled>取消</button>
+      <span class="spacer"></span>
+      <button id="clearLog" class="link">清空日志</button>
+    </section>
+
+    <!-- 进度 -->
+    <section class="card" id="progressCard">
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <div class="status">
+        <span id="status">就绪</span>
+        <span id="tracks" class="tracks"></span>
+      </div>
+    </section>
+
+    <!-- 结果 -->
+    <section class="card result" id="result" hidden>
+      <div class="result-head">
+        <span class="badge">完成</span>
+        <span id="resultSize" class="muted"></span>
+      </div>
+      <div class="result-path" id="resultPath"></div>
+      <div class="row">
+        <button id="openFile" class="primary small">打开文件</button>
+        <button id="revealFile" class="ghost small">打开所在文件夹</button>
+      </div>
+    </section>
+
+    <!-- 日志 -->
+    <section class="card log-card">
+      <div class="log-head">日志</div>
+      <div class="log" id="log"></div>
+    </section>
+
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
