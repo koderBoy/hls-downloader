@@ -1,0 +1,11 @@
+# 统一换行符：仓库内一律 LF，检出也保持 LF（Node 项目跨平台更省心）
+* text=auto eol=lf
+
+# 二进制文件不要做换行符转换
+*.png binary
+*.jpg binary
+*.ico binary
+*.gz  binary
+*.zip binary
+*.exe binary
+*.mp4 binary
